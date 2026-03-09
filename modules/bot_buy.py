@@ -4,7 +4,7 @@ bot_buy.py - Mua phôi hàng loạt độc lập (Tọa độ tĩnh)
 import time
 import pyautogui
 
-class BuyMixin:
+class BuyFodderMixin: # Đã đổi tên chuẩn với file bot.py
 
     def run_buy(self):
         self.running = True

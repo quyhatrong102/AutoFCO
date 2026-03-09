@@ -188,11 +188,10 @@ class UpgradeMixin:
             time.sleep(1.5)
             
             # Click Tiến hành (nếu thấy màu xanh)
-            self.hover_and_wait_color(720, 522, "09D95E", timeout=1.5, click_if_match=True)
+            self.hover_and_wait_color(720, 522, "09D95E", timeout=2.0, click_if_match=True)
 
-            # Click Nâng cấp
-            time.sleep(1.0)
-            pyautogui.click(x1 + 1027, y1 + 543)
+            # Click Nâng cấp (chờ nút hiện lên màu xanh lá)
+            self.hover_and_wait_color(1027, 543, "09D95E", timeout=5.0, click_if_match=True)
             time.sleep(0.5)
 
             if self.running:
