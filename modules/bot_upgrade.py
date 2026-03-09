@@ -1,5 +1,5 @@
 """
-bot_upgrade.py - Logic Auto Đập Thẻ (nâng cấp cầu thủ) (Tọa độ tuyệt đối)
+bot_upgrade.py - Logic Auto Đập Thẻ (nâng cấp cầu thủ)
 """
 import time
 import pyautogui
@@ -18,18 +18,16 @@ class UpgradeMixin:
         target_qty = min(max(int(config["qty"]), 1), 10)
         x1, y1, _, _ = self.rect
 
-        # Click Tab Mua hàng loạt
         pyautogui.click(x1 + 914, y1 + 140)
         time.sleep(4.0)
 
-        # Điền Input bằng tọa độ tĩnh
-        self._fill_input(x1 + 1068, y1 + 327, target_ovr) # Max
+        self._fill_input(x1 + 1068, y1 + 327, target_ovr) 
         if not self.running: return False
         time.sleep(1.0)
-        self._fill_input(x1 + 976, y1 + 327, target_ovr) # Min
+        self._fill_input(x1 + 976, y1 + 327, target_ovr) 
         if not self.running: return False
         time.sleep(1.0)
-        self._fill_input(x1 + 1068, y1 + 327, target_ovr) # Gõ lại max cho chắc
+        self._fill_input(x1 + 1068, y1 + 327, target_ovr) 
         if not self.running: return False
         time.sleep(1.0)
 
@@ -81,10 +79,18 @@ class UpgradeMixin:
                 time.sleep(0.5)
 
             if current_grade == -1:
-                # Click mù Tiếp Tục nếu bị kẹt ở màn kết quả
-                x1, y1, _, _ = self.rect
-                pyautogui.click(x1 + 1063, y1 + 718)
-                time.sleep(1.0)
+                clicked_continue = False
+                start_wait = time.time()
+                while time.time() - start_wait < 2.0 and self.running:
+                     pyautogui.moveTo(x1 + 1109, y1 + 720)
+                     time.sleep(0.05)
+                     if self.is_color_match("00E559", x1 + 1109, y1 + 720) or self.is_color_match("09D95E", x1 + 1109, y1 + 720):
+                         pyautogui.click(x1 + 1109, y1 + 720)
+                         clicked_continue = True
+                         break
+                
+                if clicked_continue:
+                     time.sleep(1.0)
                 continue
 
             self.update_ui_icon(current_grade)
@@ -118,12 +124,10 @@ class UpgradeMixin:
 
             x1, y1, _, _ = self.rect
             
-            # Click chuột phải Reset phôi
             pyautogui.click(x1 + 834, y1 + 423, button='right')
             time.sleep(0.5)
 
-            # Khung chữ nhật thu nhỏ cho Phôi
-            fodder_region = (x1 + 869, y1 + 281, x1 + 905, y1 + 641)
+            fodder_region = (x1 + 602, y1 + 281, x1 + 1122, y1 + 641)
 
             target_counts = Counter(needed_ovrs)
             shot = ImageGrab.grab(bbox=fodder_region)
@@ -133,9 +137,22 @@ class UpgradeMixin:
             self._scan_fodder_with_threshold(t_bin, fodder_region, target_counts, current_cycle_fodder)
 
             if self.running and any(target_counts.values()):
-                # Cuộn lên 9 nấc
-                for _ in range(9): pyautogui.scroll(100)
-                time.sleep(0.4)
+                last_hash_up = None
+                for _ in range(15): 
+                    if not self.running: break
+                    
+                    img_check_up = ImageGrab.grab(bbox=fodder_region)
+                    curr_hash_up = cv2.resize(cv2.cvtColor(np.array(img_check_up), cv2.COLOR_RGB2GRAY), (60, 60))
+                    
+                    if last_hash_up is not None and np.mean(cv2.absdiff(last_hash_up, curr_hash_up)) < 1.0: 
+                        break 
+                        
+                    last_hash_up = curr_hash_up
+                    
+                    for _ in range(9): pyautogui.scroll(100) 
+                    time.sleep(0.3)
+                
+                time.sleep(0.3)
 
                 last_hash = None
                 for scroll_attempt in range(30):
@@ -154,7 +171,6 @@ class UpgradeMixin:
                     if last_hash is not None and np.mean(cv2.absdiff(last_hash, curr_hash)) < 1.0: break
                     last_hash = curr_hash
                     
-                    # Cuộn xuống 9 nấc
                     for _ in range(9): pyautogui.scroll(-100)
                     time.sleep(0.8)
 
@@ -169,7 +185,6 @@ class UpgradeMixin:
 
                     if success:
                         self.log(f"✅ Đã mua xong phôi {missing_ovr}, quay lại đập thẻ...", "green")
-                        # Quay lại trang Nâng cấp
                         pyautogui.click(x1 + 690, y1 + 143)
                         time.sleep(1.5)
                         continue
@@ -183,22 +198,40 @@ class UpgradeMixin:
                     break
 
             # --- NÂNG CẤP ---
-            # Click Tiếp theo
-            pyautogui.click(x1 + 1028, y1 + 667)
-            time.sleep(1.5)
+            pyautogui.click(x1 + 1028, y1 + 667) # Click nút Tiếp theo
+            time.sleep(0.2)
             
-            # Click Tiến hành (nếu thấy màu xanh)
-            self.hover_and_wait_color(720, 522, "09D95E", timeout=2.0, click_if_match=True)
+            # Quét song song Tiến Hành và Nâng Cấp với tốc độ 0.05s (Tọa độ chuẩn 1066, 543)
+            start_wait = time.time()
+            upgrade_clicked = False
+            while time.time() - start_wait < 6.0:
+                if not self.running: break
+                
+                # Check Nâng Cấp trước
+                pyautogui.moveTo(x1 + 1066, y1 + 543)
+                time.sleep(0.05) 
+                if self.is_color_match("09D95E", x1 + 1066, y1 + 543):
+                    pyautogui.click(x1 + 1066, y1 + 543)
+                    upgrade_clicked = True
+                    break 
+                
+                # Check Tiến Hành
+                pyautogui.moveTo(x1 + 720, y1 + 522)
+                time.sleep(0.05)
+                if self.is_color_match("09D95E", x1 + 720, y1 + 522):
+                    pyautogui.click(x1 + 720, y1 + 522)
+                    time.sleep(0.5) # Chờ popup tắt
+                    # Popup tắt xong, rê chuột thẳng sang Nâng Cấp đợi nó hiện lên
+                    self.hover_and_wait_color(1066, 543, "09D95E", timeout=5.0, click_if_match=True)
+                    upgrade_clicked = True
+                    break 
 
-            # Click Nâng cấp (chờ nút hiện lên màu xanh lá)
-            self.hover_and_wait_color(1027, 543, "09D95E", timeout=5.0, click_if_match=True)
             time.sleep(0.5)
 
-            if self.running:
+            if upgrade_clicked and self.running:
                 self.upgrade_triggered = True
                 self.fodder_consumed.update(current_cycle_fodder)
 
-                # Skip Animation HCN
                 skip_reg = (x1 + 1037, y1 + 666, x1 + 1123, y1 + 740)
                 max_skips = 2 if self.has_used_bp_in_cycle else 1
                 for s_count in range(max_skips):
@@ -216,29 +249,40 @@ class UpgradeMixin:
                             break
                         time.sleep(0.5)
 
-                # Chờ màn hình kết quả
-                btn_found = False
-                for wait_idx in range(15):
-                    if not self.running: break
-                    
-                    # Click mù vào Tiếp tục
-                    pyautogui.click(x1 + 1063, y1 + 718)
-                    time.sleep(0.5)
-                    
-                    # Quét xem đã về màn hình thẻ chính chưa
-                    res_grade = self.detect_grade_PRECISION()
-                    if res_grade != -1:
-                        btn_found = True
-                        if res_grade == self.last_target_grade:
-                            self.grade_success[res_grade] += 1
-                            self.log_update(self.last_log_pos, ": THÀNH CÔNG", "success")
-                        else:
-                            self.grade_fail[self.last_target_grade] += 1
-                            self.log_update(self.last_log_pos, f": THẤT BẠI VỀ +{res_grade}", "fail")
+                clicked_continue = False
+                start_wait_result = time.time()
+                while time.time() - start_wait_result < 12.0 and self.running:
+                     pyautogui.moveTo(x1 + 1109, y1 + 720)
+                     time.sleep(0.1)
+                     if self.is_color_match("00E559", x1 + 1109, y1 + 720) or self.is_color_match("09D95E", x1 + 1109, y1 + 720):
+                         time.sleep(0.1) 
+                         pyautogui.click(x1 + 1109, y1 + 720)
+                         clicked_continue = True
+                         break
+                
+                if clicked_continue and self.running:
+                    btn_found = False
+                    for wait_idx in range(15):
+                        if not self.running: break
+                        time.sleep(0.5) 
+                        
+                        res_grade = self.detect_grade_PRECISION()
+                        if res_grade != -1:
+                            btn_found = True
+                            if res_grade == self.last_target_grade:
+                                self.grade_success[res_grade] += 1
+                                self.log_update(self.last_log_pos, ": THÀNH CÔNG", "success")
+                            else:
+                                self.grade_fail[self.last_target_grade] += 1
+                                self.log_update(self.last_log_pos, f": THẤT BẠI VỀ +{res_grade}", "fail")
+                            break
+                            
+                    if not btn_found and self.running:
+                        self.log("LỖI: Không đọc được cấp thẻ sau đập", "fail")
                         break
-                    
-                if not btn_found and self.running: 
-                    self.log("LỖI: Hết thời gian chờ kết quả đập thẻ", "fail")
-                    break
+                else:
+                    if self.running:
+                        self.log("LỖI: Hết thời gian chờ màn hình kết quả", "fail")
+                        break
 
         self.on_finished(summary_data=(self.total_cycles, self.grade_success, self.grade_fail, self.fodder_consumed))

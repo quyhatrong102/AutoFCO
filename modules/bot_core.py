@@ -52,9 +52,7 @@ class FCOnlineBot:
         return False
 
     # ===================== COLOR TRACKING ENGINE =====================
-
     def is_color_match(self, hex_color, x, y, tolerance=15):
-        """Đọc đúng 1 Pixel tại tọa độ và so sánh mã màu Hex (Chống lag siêu nhẹ)"""
         hex_color = hex_color.lstrip('#')
         tr, tg, tb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
         try:
@@ -65,7 +63,6 @@ class FCOnlineBot:
             return False
 
     def hover_and_wait_color(self, rel_x, rel_y, hex_color, timeout=5.0, click_if_match=True):
-        """Di chuột vào tọa độ, chờ nó đổi màu thì click"""
         if not self.running or not self.rect: return False
         x, y = self.rect[0] + rel_x, self.rect[1] + rel_y
         pyautogui.moveTo(x, y)
@@ -75,31 +72,13 @@ class FCOnlineBot:
             if not self.running: return False
             if self.is_color_match(hex_color, x, y):
                 if click_if_match:
-                    time.sleep(0.1) # Dừng một nhịp để game nhận click
+                    time.sleep(0.1) 
                     pyautogui.click(x, y)
                 return True
             time.sleep(0.1)
         return False
 
     # ===================== IMAGE MATCHING CẤP THẺ =====================
-
-    def _multi_scale_match(self, template, screen_gray, threshold):
-        best_val = 0
-        best_loc = None
-        best_w, best_h = 0, 0
-        scales = [1.0, 1.25, 1.5, 0.8, 1.1]
-        for scale in scales:
-            w = int(template.shape[1] * scale)
-            h = int(template.shape[0] * scale)
-            if w > screen_gray.shape[1] or h > screen_gray.shape[0] or w == 0 or h == 0: continue
-            resized_template = cv2.resize(template, (w, h), interpolation=cv2.INTER_AREA)
-            res = cv2.matchTemplate(screen_gray, resized_template, cv2.TM_CCOEFF_NORMED)
-            _, max_val, _, max_loc = cv2.minMaxLoc(res)
-            if max_val > best_val:
-                best_val, best_loc, best_w, best_h = max_val, max_loc, w, h
-        if best_val >= threshold: return best_loc, best_w, best_h
-        return None, 0, 0
-
     def detect_grade_PRECISION(self):
         x1, y1, x2, y2 = self.rect
         w, h = x2 - x1, y2 - y1
@@ -121,7 +100,6 @@ class FCOnlineBot:
         return best_grade
 
     # ===================== GAME INTERACTIONS =====================
-
     def handle_bp_protection(self):
         if not self.running: return False
         x1, y1, _, _ = self.rect
@@ -130,10 +108,15 @@ class FCOnlineBot:
         pyautogui.click(x1 + 697, y1 + 668)
         time.sleep(0.5)
         
-        # Kéo thanh trượt đến Max
-        pyautogui.moveTo(x1 + 613, y1 + 442)
-        pyautogui.dragTo(x1 + 834, y1 + 442, duration=0.3, button='left')
-        time.sleep(0.3)
+        # Kéo thanh trượt đến Max (Tốc độ kéo cực nhanh: 0.15s)
+        pyautogui.moveTo(x1 + 614, y1 + 442)
+        time.sleep(0.1)
+        pyautogui.mouseDown()
+        time.sleep(0.05)
+        pyautogui.moveTo(x1 + 870, y1 + 442, duration=0.15) 
+        time.sleep(0.1)
+        pyautogui.mouseUp()
+        time.sleep(0.2)
         
         # Click Xác nhận
         pyautogui.click(x1 + 743, y1 + 597)
@@ -177,29 +160,23 @@ class FCOnlineBot:
         x1, y1, _, _ = self.rect
 
         while not buy_success and self.running:
-            # Click Mua hàng loạt
             pyautogui.click(x1 + 1039, y1 + 671)
             time.sleep(0.5)
 
-            # Chờ popup mở và ấn Xác nhận (Màu xanh 09D95E)
             confirm_success = self.hover_and_wait_color(750, 602, "09D95E", timeout=3.0, click_if_match=True)
             if not confirm_success:
                 continue
 
-            # Chờ kết quả Thất bại hoặc Thành công (Luân phiên đưa chuột check màu)
             outcome = None
             deadline = time.time() + 8.0
             while time.time() < deadline:
                 if not self.running: break
-                
-                # Check Nhận Ngay (Thành công)
                 pyautogui.moveTo(x1 + 737, y1 + 671)
                 time.sleep(0.05)
                 if self.is_color_match("09D95E", x1 + 737, y1 + 671):
                     outcome = "success"
                     break
                     
-                # Check Xác Nhận (Thất bại)
                 pyautogui.moveTo(x1 + 768, y1 + 460)
                 time.sleep(0.05)
                 if self.is_color_match("09D95E", x1 + 768, y1 + 460):
@@ -210,7 +187,7 @@ class FCOnlineBot:
                 if log_fail_once and not has_logged_fail:
                     self.log("❌ Mua thất bại! Đang spam ...", "fail")
                     has_logged_fail = True
-                pyautogui.click(x1 + 768, y1 + 460) # Click tắt popup
+                pyautogui.click(x1 + 768, y1 + 460) 
                 time.sleep(0.2)
                 continue
 
@@ -219,14 +196,13 @@ class FCOnlineBot:
                 buy_success = True
                 time.sleep(1.0)
             else:
-                return 0, False, True # Timeout
+                return 0, False, True
 
         if not self.running: return 0, False, False
 
-        # Vùng check Số lượng mua được (Gọn cực kì, không cần OCR cả bảng)
         scan_qty_region = (x1 + 695, y1 + 618, x1 + 706, y1 + 633)
         shot = ImageGrab.grab(bbox=scan_qty_region)
-        img_np = cv2.resize(np.array(shot), None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC) # Resize to lên để đọc
+        img_np = cv2.resize(np.array(shot), None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC) 
         gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         text = pytesseract.image_to_string(thresh, config='--psm 7 -c tessedit_char_whitelist=0123456789').strip()

@@ -4,7 +4,7 @@ bot_buy.py - Mua phôi hàng loạt độc lập (Tọa độ tĩnh)
 import time
 import pyautogui
 
-class BuyFodderMixin: # Đã đổi tên chuẩn với file bot.py
+class BuyFodderMixin:
 
     def run_buy(self):
         self.running = True
@@ -20,11 +20,10 @@ class BuyFodderMixin: # Đã đổi tên chuẩn với file bot.py
 
         x1, y1, _, _ = self.rect
 
-        # Nhập form Min / Max
-        self._fill_input(x1 + 1068, y1 + 327, target_ovr) # Max
+        self._fill_input(x1 + 1068, y1 + 327, target_ovr) 
         if not self.running: return False
         time.sleep(2.0)
-        self._fill_input(x1 + 976, y1 + 327, target_ovr) # Min
+        self._fill_input(x1 + 976, y1 + 327, target_ovr) 
         if not self.running: return False
         time.sleep(2.0)
         self._fill_input(x1 + 1068, y1 + 327, target_ovr)
