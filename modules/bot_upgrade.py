@@ -199,9 +199,9 @@ class UpgradeMixin:
 
             # --- NÂNG CẤP ---
             pyautogui.click(x1 + 1028, y1 + 667) # Click nút Tiếp theo
-            time.sleep(0.2)
+            time.sleep(0.3) # Đợi một nhịp 0.3s để game load xong hiệu ứng chuyển trang
             
-            # Quét song song Tiến Hành và Nâng Cấp với tốc độ 0.05s (Tọa độ chuẩn 1066, 543)
+            # Quét song song Tiến Hành và Nâng Cấp (Dừng 0.15s ở mỗi nút để trị dứt điểm micro-lag)
             start_wait = time.time()
             upgrade_clicked = False
             while time.time() - start_wait < 6.0:
@@ -209,7 +209,7 @@ class UpgradeMixin:
                 
                 # Check Nâng Cấp trước
                 pyautogui.moveTo(x1 + 1066, y1 + 543)
-                time.sleep(0.05) 
+                time.sleep(0.15) # <-- Trọng tâm là đây, ép chuột đậu đủ lâu để FO4 kịp bung màu xanh
                 if self.is_color_match("09D95E", x1 + 1066, y1 + 543):
                     pyautogui.click(x1 + 1066, y1 + 543)
                     upgrade_clicked = True
@@ -217,11 +217,11 @@ class UpgradeMixin:
                 
                 # Check Tiến Hành
                 pyautogui.moveTo(x1 + 720, y1 + 522)
-                time.sleep(0.05)
+                time.sleep(0.15)
                 if self.is_color_match("09D95E", x1 + 720, y1 + 522):
                     pyautogui.click(x1 + 720, y1 + 522)
                     time.sleep(0.5) # Chờ popup tắt
-                    # Popup tắt xong, rê chuột thẳng sang Nâng Cấp đợi nó hiện lên
+                    # Di chuột qua Nâng Cấp và chờ nó xanh lên
                     self.hover_and_wait_color(1066, 543, "09D95E", timeout=5.0, click_if_match=True)
                     upgrade_clicked = True
                     break 
