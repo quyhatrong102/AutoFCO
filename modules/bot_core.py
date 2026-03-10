@@ -16,16 +16,19 @@ from config import SAMPLE_DIR
 
 
 class FCOnlineBot:
-    def __init__(self, log_func, ui_update_func, on_finished_func,
-                 fodder_map, target_grade, alarm_func, success_alarm_func,
-                 log_update_func, bp_enabled, auto_buy_config=None):
-        self.log = log_func
-        self.log_update = log_update_func
-        self.update_ui_icon = ui_update_func
-        self.on_finished = on_finished_func
-        self.trigger_error_alarm = alarm_func
-        self.trigger_success_alarm = success_alarm_func
-        self.fodder_map = fodder_map
+    # Đã cấp giá trị mặc định (=None) cho toàn bộ tham số để fix lỗi sập ngầm của Auto Chèn/Mua
+    def __init__(self, log_func=None, ui_update_func=None, on_finished_func=None,
+                 fodder_map=None, target_grade=1, alarm_func=None, success_alarm_func=None,
+                 log_update_func=None, bp_enabled=False, auto_buy_config=None):
+        
+        self.log = log_func if log_func else (lambda msg, tag="": print(msg))
+        self.log_update = log_update_func if log_update_func else (lambda pos, msg, tag="": None)
+        self.update_ui_icon = ui_update_func if ui_update_func else (lambda grade: None)
+        self.on_finished = on_finished_func if on_finished_func else (lambda *args, **kwargs: None)
+        self.trigger_error_alarm = alarm_func if alarm_func else (lambda msg=None: None)
+        self.trigger_success_alarm = success_alarm_func if success_alarm_func else (lambda grade, msg=None: None)
+        
+        self.fodder_map = fodder_map if fodder_map else {}
         self.target_grade = target_grade
         self.bp_enabled = bp_enabled
         self.auto_buy_config = auto_buy_config
@@ -78,26 +81,64 @@ class FCOnlineBot:
             time.sleep(0.1)
         return False
 
-    # ===================== IMAGE MATCHING CẤP THẺ =====================
+    # ===================== IMAGE MATCHING CẤP THẺ MỚI (TỐI ƯU SIÊU CHUẨN) =====================
     def detect_grade_PRECISION(self):
-        x1, y1, x2, y2 = self.rect
-        w, h = x2 - x1, y2 - y1
-        scan_area = (x1 + int(w * 0.31), y1 + int(h * 0.14), x1 + int(w * 0.51), y1 + int(h * 0.39))
+        x1, y1, _, _ = self.rect
+        
+        # 1. Thu hẹp vùng quét chính xác vào tọa độ chữ số tĩnh đã đo: (537,184) đến (567,203)
+        scan_area = (x1 + 537, y1 + 184, x1 + 567, y1 + 203)
         shot = ImageGrab.grab(bbox=scan_area)
         img_gray = cv2.cvtColor(np.array(shot), cv2.COLOR_RGB2GRAY)
+
+        # 2. Sử dụng Canny Edge Detection: Lấy "Khung xương" của chữ số, chống mù lòa do hiệu ứng Glow
+        img_edges = cv2.Canny(img_gray, 50, 150)
+
         best_grade, highest_val = -1, 0
-        scales = np.linspace(0.8, 1.2, 5)
+        scales = [0.8, 0.9, 1.0, 1.1, 1.2] # Nới rộng dải scale một chút do khung đã rất chật
+
+        for g in range(1, 14):
+            p = os.path.join(SAMPLE_DIR, f"{g}.png")
+            if not os.path.exists(p): continue
+            template = cv2.imread(p, cv2.IMREAD_GRAYSCALE)
+            template_edges = cv2.Canny(template, 50, 150) # Cũng lấy khung xương mẫu
+
+            for scale in scales:
+                w_t = int(template_edges.shape[1] * scale)
+                h_t = int(template_edges.shape[0] * scale)
+                if w_t == 0 or h_t == 0 or w_t > img_edges.shape[1] or h_t > img_edges.shape[0]:
+                    continue
+
+                resized_template = cv2.resize(template_edges, (w_t, h_t), interpolation=cv2.INTER_NEAREST)
+                res = cv2.matchTemplate(img_edges, resized_template, cv2.TM_CCOEFF_NORMED)
+                _, max_val, _, _ = cv2.minMaxLoc(res)
+
+                if max_val > highest_val:
+                    highest_val = max_val
+                    best_grade = g
+
+        # Threshold của Edge Match thường thấp hơn Gray (Lớn hơn 0.15 là đã khớp xương chữ)
+        if highest_val > 0.15:
+            return best_grade
+
+        # 3. FALLBACK: Cứu cánh bằng thuật toán GrayScale cũ nhưng khắt khe hơn
+        best_grade_gray, highest_val_gray = -1, 0
         for g in range(1, 14):
             p = os.path.join(SAMPLE_DIR, f"{g}.png")
             if not os.path.exists(p): continue
             template = cv2.imread(p, cv2.IMREAD_GRAYSCALE)
             for scale in scales:
-                res = cv2.matchTemplate(img_gray, cv2.resize(template, None, fx=scale, fy=scale), cv2.TM_CCOEFF_NORMED)
+                w_t = int(template.shape[1] * scale)
+                h_t = int(template.shape[0] * scale)
+                if w_t == 0 or h_t == 0 or w_t > img_gray.shape[1] or h_t > img_gray.shape[0]:
+                    continue
+                resized_template = cv2.resize(template, (w_t, h_t), interpolation=cv2.INTER_AREA)
+                res = cv2.matchTemplate(img_gray, resized_template, cv2.TM_CCOEFF_NORMED)
                 _, max_val, _, _ = cv2.minMaxLoc(res)
-                if max_val > highest_val and max_val > 0.75:
-                    highest_val = max_val
-                    best_grade = g
-        return best_grade
+                if max_val > highest_val_gray and max_val > 0.70:
+                    highest_val_gray = max_val
+                    best_grade_gray = g
+
+        return best_grade_gray
 
     # ===================== GAME INTERACTIONS =====================
     def handle_bp_protection(self):
