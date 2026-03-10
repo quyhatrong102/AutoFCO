@@ -174,22 +174,25 @@ class InsertMixin:
                     chen_x, chen_y = 882, 616
                     chen_color     = "0C8FF3"
 
-                # 2. Doi popup hien (mau 353838 tai nut Huy)
-                _t0 = time.time()
+                # 2. Doi popup hien (mau FCFCF7 tai background popup 679,595)
                 popup_opened = self.hover_and_wait_color(
-                    huy_x, huy_y, "353838", timeout=2.0, click_if_match=False
+                    679, 595, "FCFCF7", timeout=2.0, click_if_match=False
                 )
-                self.log(f"   [DBG] popup wait: {time.time()-_t0:.3f}s slot{slot_num}", "white")
 
                 if not popup_opened:
                     continue
 
-                # Doi popup render xong
-                time.sleep(0.5)
-
-                # 3. Chup va OCR gia hien tai
+                # 3. Chup va OCR gia hien tai (2 lan, chi tin khi khop nhau)
                 price_img, price_bbox = self._grab_price(x1, y1, is_max)
                 price_now = self._ocr_from_img(price_img)
+                time.sleep(0.05)
+                price_img2, _ = self._grab_price(x1, y1, is_max)
+                price_now2 = self._ocr_from_img(price_img2)
+                if price_now != price_now2:
+                    # Gia chua on dinh → bo qua vong nay
+                    pyautogui.click(self.rect[0] + huy_x, self.rect[1] + huy_y)
+                    continue
+
 
 
 

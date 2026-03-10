@@ -16,6 +16,10 @@ class BuyFodderMixin:
 
         x1, y1, _, _ = self.rect
 
+        # Click vao tab Mua hang loat truoc khi bat dau
+        pyautogui.click(x1 + 912, y1 + 141)
+        time.sleep(2.0)
+
         for item in buy_data:
             if not self.running:
                 break
