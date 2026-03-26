@@ -1,5 +1,5 @@
 """
-ui_insert.py - UI cho tab Auto Chèn
+ui_insert_mua.py - UI cho tab Auto Chèn DS Mua
 """
 import threading
 import tkinter as tk
@@ -45,28 +45,28 @@ def _fetch_internet_time():
     return datetime.datetime.now()
 
 
-class InsertUI:
+class InsertMuaUI:
 
-    def build_insert_ui(self):
+    def build_insert_mua_ui(self):
         # ── Nút back ──────────────────────────────────────────────
-        self.btn_back_insert = tk.Button(
-            self.insert_frame, text="< Menu",
+        self.btn_back_insert_mua = tk.Button(
+            self.insert_mua_frame, text="< Menu",
             font=("Consolas", 8, "bold"), bg="#21262d", fg="#c9d1d9",
             bd=0, command=self.show_menu
         )
-        self.btn_back_insert.place(x=5, y=5)
-        add_hover_effect(self.btn_back_insert, "#30363d", "#21262d")
+        self.btn_back_insert_mua.place(x=5, y=5)
+        add_hover_effect(self.btn_back_insert_mua, "#30363d", "#21262d")
 
         # ── Tiêu đề ───────────────────────────────────────────────
-        tk.Label(self.insert_frame, text="Auto Chèn (DS yêu thích)",
+        tk.Label(self.insert_mua_frame, text="Auto Chèn (DS Mua)",
                  font=("Consolas", 14, "bold"), fg="#ff79c6", bg="#0d1117"
                  ).pack(pady=(22, 0))
-        tk.Label(self.insert_frame, text="By Quybodoivodichvutru",
+        tk.Label(self.insert_mua_frame, text="By Quybodoivodichvutru",
                  font=("Consolas", 10, "bold"), fg="#58a6ff", bg="#0d1117"
                  ).pack(pady=(2, 6))
 
         # ── Khung thời gian ───────────────────────────────────────
-        time_frame = tk.Frame(self.insert_frame, bg="#161b22",
+        time_frame = tk.Frame(self.insert_mua_frame, bg="#161b22",
                               highlightthickness=1, highlightbackground="#30363d")
         time_frame.pack(pady=(4, 0), padx=20, fill="x")
 
@@ -79,10 +79,10 @@ class InsertUI:
         self.lbl_chan_le.pack(pady=(0, 8))
 
         # ── Khu vực cấu hình slot ─────────────────────────────────
-        self.insert_rows_data = []
+        self.insert_mua_rows_data = []
 
         # Wrapper căn giữa — dùng outer frame expand để center
-        outer_wrap = tk.Frame(self.insert_frame, bg="#0d1117")
+        outer_wrap = tk.Frame(self.insert_mua_frame, bg="#0d1117")
         outer_wrap.pack(pady=(10, 0), fill="x")
 
         table_wrap = tk.Frame(outer_wrap, bg="#0d1117")
@@ -109,36 +109,36 @@ class InsertUI:
         self._add_insert_row(is_first=True)
 
         # Nút Thêm
-        btn_add = tk.Button(self.insert_frame, text="+ THÊM",
+        btn_add = tk.Button(self.insert_mua_frame, text="+ THÊM",
                             font=("Consolas", 9, "bold"), bg="#21262d", fg="#c9d1d9",
                             width=10, bd=0, command=self._add_insert_row_auto)
         btn_add.pack(pady=(6, 2))
         add_hover_effect(btn_add, "#30363d", "#21262d")
 
         # ── Log output ────────────────────────────────────────────
-        log_f = tk.Frame(self.insert_frame, bg="#0d1117")
+        log_f = tk.Frame(self.insert_mua_frame, bg="#0d1117")
         log_f.pack(fill="both", expand=True, padx=10, pady=(6, 0))
 
-        self.insert_log_b = scrolledtext.ScrolledText(
+        self.insert_mua_log_b = scrolledtext.ScrolledText(
             log_f, bg="#161b22", fg="#7ee787",
             font=("Consolas", 10), height=4, bd=0)
-        self.insert_log_b.bind("<Key>", prevent_typing)
-        self.insert_log_b.pack(fill="both", expand=True)
-        configure_log_tags(self.insert_log_b)
+        self.insert_mua_log_b.bind("<Key>", prevent_typing)
+        self.insert_mua_log_b.pack(fill="both", expand=True)
+        configure_log_tags(self.insert_mua_log_b)
 
         # ── Bottom: START + checkbox ──────────────────────────────
-        ctrl_f = tk.Frame(self.insert_frame, bg="#0d1117")
+        ctrl_f = tk.Frame(self.insert_mua_frame, bg="#0d1117")
         ctrl_f.pack(side="bottom", fill="x", padx=10, pady=(5, 15))
 
         btn_row = tk.Frame(ctrl_f, bg="#0d1117")
         btn_row.pack(fill="x")
 
-        self.btn_start_insert = tk.Button(
+        self.btn_start_insert_mua = tk.Button(
             btn_row, text="START", bg="#238636", fg="white",
             font=("Consolas", 10, "bold"), width=10, bd=0,
             activebackground="#2ea043", command=self.start_insert)
-        self.btn_start_insert.pack(side="left")
-        add_hover_effect(self.btn_start_insert, "#2ea043", "#238636")
+        self.btn_start_insert_mua.pack(side="left")
+        add_hover_effect(self.btn_start_insert_mua, "#2ea043", "#238636")
 
         right_f = tk.Frame(btn_row, bg="#0d1117")
         right_f.pack(side="right")
@@ -146,13 +146,13 @@ class InsertUI:
         # ESC hint — hàng riêng bên dưới START, căn trái tuyệt đối
         esc_row = tk.Frame(ctrl_f, bg="#0d1117")
         esc_row.pack(fill="x")
-        self.lbl_esc_hint_insert = tk.Label(
+        self.lbl_esc_hint_insert_mua = tk.Label(
             esc_row, text="ESC để Dừng",
             font=("Consolas", 7, "bold"), fg="#ff5555", bg="#0d1117")
-        self.lbl_esc_hint_insert.pack(side="left", pady=(2, 0))
-        self.lbl_esc_hint_insert.pack_forget()
+        self.lbl_esc_hint_insert_mua.pack(side="left", pady=(2, 0))
+        self.lbl_esc_hint_insert_mua.pack_forget()
 
-        self.insert_time_limit_var = tk.BooleanVar(value=False)
+        self.insert_mua_time_limit_var = tk.BooleanVar(value=False)
 
         # Màu sắc các trạng thái
         _C_ACTIVE  = "#c9d1d9"   # đã tích
@@ -161,7 +161,7 @@ class InsertUI:
 
         chk = tk.Checkbutton(
             right_f, text="Chỉ chạy trong",
-            variable=self.insert_time_limit_var,
+            variable=self.insert_mua_time_limit_var,
             bg="#0d1117", fg=_C_DIMMED, selectcolor="#0d1117",
             activebackground="#0d1117", activeforeground=_C_ACTIVE,
             font=("Consolas", 9), bd=0, highlightthickness=0)
@@ -169,39 +169,39 @@ class InsertUI:
 
         vcmd2 = (self.root.register(
             lambda P: P == "" or (P.isdigit() and len(P) <= 2)), '%P')
-        self.insert_time_limit_entry = tk.Entry(
+        self.insert_mua_time_limit_entry = tk.Entry(
             right_f, width=3, font=("Consolas", 9),
             bg="#161b22", fg=_C_DIMMED, insertbackground="white",
             bd=1, justify="center", state="disabled",
             validate='key', validatecommand=vcmd2)
-        self.insert_time_limit_entry.pack(side="left", padx=3)
+        self.insert_mua_time_limit_entry.pack(side="left", padx=3)
 
         lbl_phut = tk.Label(right_f, text="phút",
                             font=("Consolas", 9), fg=_C_DIMMED, bg="#0d1117")
         lbl_phut.pack(side="left")
 
         def _on_toggle(*args):
-            enabled = self.insert_time_limit_var.get()
+            enabled = self.insert_mua_time_limit_var.get()
             if enabled:
                 chk.config(fg=_C_ACTIVE)
                 lbl_phut.config(fg=_C_ACTIVE)
-                self.insert_time_limit_entry.config(
+                self.insert_mua_time_limit_entry.config(
                     state="normal", bg="#21262d", fg="white")
             else:
                 chk.config(fg=_C_DIMMED)
                 lbl_phut.config(fg=_C_DIMMED)
-                self.insert_time_limit_entry.config(
+                self.insert_mua_time_limit_entry.config(
                     state="disabled", bg="#161b22", fg=_C_DIMMED)
 
-        self.insert_time_limit_var.trace_add("write", _on_toggle)
+        self.insert_mua_time_limit_var.trace_add("write", _on_toggle)
 
         # Hover đồng bộ: chỉ sáng khi đã tích
         def _hover_enter(e):
-            if self.insert_time_limit_var.get():
+            if self.insert_mua_time_limit_var.get():
                 chk.config(fg=_C_HOVER)
                 lbl_phut.config(fg=_C_HOVER)
         def _hover_leave(e):
-            if self.insert_time_limit_var.get():
+            if self.insert_mua_time_limit_var.get():
                 chk.config(fg=_C_ACTIVE)
                 lbl_phut.config(fg=_C_ACTIVE)
         for w in (right_f, chk, lbl_phut):
@@ -217,8 +217,8 @@ class InsertUI:
 
     # ===================== DÒNG SLOT =====================
 
-    def _add_insert_row(self, is_first=False, slot_num=None, mua_ban_init="Mua"):
-        if len(self.insert_rows_data) >= _MAX_ROWS:
+    def _add_insert_mua_row(self, is_first=False, slot_num=None, mua_ban_init="Mua"):
+        if len(self.insert_mua_rows_data) >= _MAX_ROWS:
             return
 
         row_f = tk.Frame(self.insert_rows_container, bg="#0d1117")
@@ -227,7 +227,7 @@ class InsertUI:
         # ── Slot: button mở custom dropdown ───────────────────────
         # Tính slot nhỏ nhất chưa có nếu không truyền vào
         if slot_num is None:
-            used = {int(r["slot"].get()) for r in self.insert_rows_data}
+            used = {int(r["slot"].get()) for r in self.insert_mua_rows_data}
             slot_num = next((i for i in range(1, _MAX_ROWS + 1) if i not in used), 1)
         slot_var = tk.StringVar(value=str(slot_num))
 
@@ -323,25 +323,25 @@ class InsertUI:
             btn_del.pack(fill="both", expand=True)
             add_hover_effect(btn_del, "#f85149", "#da3633")
 
-        self.insert_rows_data.append(row_data)
+        self.insert_mua_rows_data.append(row_data)
         if not is_first:
-            self._update_insert_window_height()
+            self._update_insert_mua_window_height()
 
-    def _add_insert_row_auto(self):
+    def _add_insert_mua_row_auto(self):
         """Bấm + THÊM: thêm row với slot nhỏ nhất chưa dùng, mặc định Mua."""
-        if len(self.insert_rows_data) >= _MAX_ROWS:
+        if len(self.insert_mua_rows_data) >= _MAX_ROWS:
             return
-        used = {int(r["slot"].get()) for r in self.insert_rows_data}
+        used = {int(r["slot"].get()) for r in self.insert_mua_rows_data}
         next_slot = next((i for i in range(1, _MAX_ROWS + 1) if i not in used), 1)
         self._add_insert_row(is_first=False, slot_num=next_slot, mua_ban_init="Mua")
-    def _remove_insert_row(self, row_data):
-        if row_data in self.insert_rows_data:
+    def _remove_insert_mua_row(self, row_data):
+        if row_data in self.insert_mua_rows_data:
             row_data["frame"].destroy()
-            self.insert_rows_data.remove(row_data)
-            self._update_insert_window_height()
+            self.insert_mua_rows_data.remove(row_data)
+            self._update_insert_mua_window_height()
 
-    def _update_insert_window_height(self):
-        n = len(self.insert_rows_data)
+    def _update_insert_mua_window_height(self):
+        n = len(self.insert_mua_rows_data)
         h = _WIN_H_BASE + max(0, n - 1) * _ROW_H
         self.root.geometry(f"{_WIN_W}x{h}+{self.sw - _WIN_W}+0")
 
@@ -365,7 +365,7 @@ class InsertUI:
     def _tick_insert_clock(self):
         if not self._insert_clock_running:
             return
-        if not self.insert_frame.winfo_ismapped():
+        if not self.insert_mua_frame.winfo_ismapped():
             self.root.after(500, self._tick_insert_clock)
             return
         import datetime
@@ -381,7 +381,7 @@ class InsertUI:
 
     # ===================== LOG =====================
 
-    def log_insert(self, msg, tag=None):
+    def log_insert_mua(self, msg, tag=None):
         self._insert_log_queue.append((msg, tag))
 
     def _drain_insert_log(self):
@@ -391,21 +391,21 @@ class InsertUI:
             batch = self._insert_log_queue[:20]
             del self._insert_log_queue[:20]
             for msg, tag in batch:
-                self._insert_log(self.insert_log_b, msg, tag)
+                self._insert_log(self.insert_mua_log_b, msg, tag)
         self.root.after(100, self._drain_insert_log)
 
     # ===================== START / STOP =====================
 
-    def start_insert(self):
+    def start_insert_mua(self):
         if self.is_running:
             return
-        if not self.insert_rows_data:
+        if not self.insert_mua_rows_data:
             self.log_insert("❌ Chưa có dòng slot nào.", "orange")
             return
 
         # Thu thập config từ UI
         slot_configs = []
-        for row in self.insert_rows_data:
+        for row in self.insert_mua_rows_data:
             slot_configs.append({
                 "slot":    row["slot"].get(),
                 "mua_ban": row["mua_ban"].get(),
@@ -413,14 +413,14 @@ class InsertUI:
             })
 
         # Reset ô vị trí
-        for row in self.insert_rows_data:
+        for row in self.insert_mua_rows_data:
             row["pos"].set("")
 
-        self.insert_log_b.delete("1.0", "end")
+        self.insert_mua_log_b.delete("1.0", "end")
         self.is_running = True
-        self.btn_start_insert.config(state="disabled", bg="#484f58")
+        self.btn_start_insert_mua.config(state="disabled", bg="#484f58")
         self.lock_ui()
-        self.lbl_esc_hint_insert.pack(side="left", pady=(2, 0))
+        self.lbl_esc_hint_insert_mua.pack(side="left", pady=(2, 0))
 
         from bot import FCOnlineBot
         import threading
@@ -440,14 +440,14 @@ class InsertUI:
 
         # Lấy time_limit nếu checkbox được tích
         time_limit = None
-        if self.insert_time_limit_var.get():
+        if self.insert_mua_time_limit_var.get():
             try:
-                time_limit = float(self.insert_time_limit_entry.get())
+                time_limit = float(self.insert_mua_time_limit_entry.get())
             except ValueError:
                 time_limit = None
 
         threading.Thread(
-            target=self.bot.run_insert,
+            target=self.bot.run_insert_mua,
             args=(slot_configs,),
             kwargs={"time_limit_minutes": time_limit},
             daemon=True

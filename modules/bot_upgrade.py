@@ -18,18 +18,18 @@ class UpgradeMixin:
         target_qty = min(max(int(config["qty"]), 1), 10)
         x1, y1, _, _ = self.rect
 
-        pyautogui.click(x1 + 914, y1 + 140)
-        time.sleep(4.0)
+        pyautogui.click(x1 + 912, y1 + 141)
+        time.sleep(2.0)
 
         self._fill_input(x1 + 1068, y1 + 327, target_ovr) 
         if not self.running: return False
-        time.sleep(1.0)
+        time.sleep(2.0)
         self._fill_input(x1 + 976, y1 + 327, target_ovr) 
         if not self.running: return False
-        time.sleep(1.0)
+        time.sleep(2.0)
         self._fill_input(x1 + 1068, y1 + 327, target_ovr) 
         if not self.running: return False
-        time.sleep(1.0)
+        time.sleep(2.0)
 
         original_qty  = target_qty
         remaining_qty = target_qty
@@ -39,23 +39,33 @@ class UpgradeMixin:
         while remaining_qty > 0 and self.running:
             current_buy_qty = min(remaining_qty, 10)
 
-            self._fill_input(x1 + 946, y1 + 448, target_price)
-            time.sleep(0.5)
-            self._fill_input(x1 + 1050, y1 + 508, current_buy_qty)
+            self._fill_price_and_qty_verified(
+                x1 + 946, y1 + 448, target_price,
+                x1 + 1050, y1 + 508, current_buy_qty,
+                price_input=config["price"]
+            )
             time.sleep(0.5)
 
             actual_bought, success, should_stop = self._do_buy_loop(
                 target_ovr, target_price, current_buy_qty, log_fail_once=True
             )
             
-            if should_stop or not self.running: return False
+            if not self.running: return False
+            if should_stop:
+                # Timeout (game lag/popup) → dong popup roi retry, khong dung
+                self.check_and_close_popup()
+                time.sleep(1.0)
+                continue
             remaining_qty -= actual_bought
             if remaining_qty > 0 and self.running:
                 self.log(f"🔄 Đã mua được {actual_bought}. Còn thiếu {remaining_qty} phôi. Đang mua tiếp...", "orange")
+                time.sleep(1.0)
 
         if self.running and remaining_qty <= 0:
             bought = original_qty - max(0, remaining_qty)
             self.log(f"✅ Đã mua đủ: {bought}/{original_qty} phôi OVR {target_ovr}.", "success")
+            pyautogui.click(x1 + 702, y1 + 135)
+            time.sleep(1.0)
 
         return remaining_qty <= 0 and self.running
 
@@ -66,17 +76,35 @@ class UpgradeMixin:
             self.running = False
             self.on_finished()
             return
+        self._start_popup_watcher()
+
+        self._start_popup_watcher()
+        x1, y1, _, _ = self.rect   # khai bao 1 lan, dung cho ca vong lap
+
+        skip_grade_detect = False   # True sau khi mua phoi xong, bo qua detect grade
+        saved_grade = -1             # luu grade truoc khi di mua phoi
+        current_cycle_fodder = Counter()  # reset khi bat dau chu ky dap the moi
+        _resume_after_buy = False    # True: khong log lan moi, dung lai last_log_pos cu
 
         while self.running:
-            current_cycle_fodder = Counter()
-            current_grade = -1
             self.has_used_bp_in_cycle = False
 
-            for _ in range(15):
-                if not self.running: break
-                current_grade = self.detect_grade_PRECISION()
-                if current_grade != -1: break
-                time.sleep(0.5)
+            if skip_grade_detect and saved_grade != -1:
+                current_grade = saved_grade
+                skip_grade_detect = False
+                _resume_after_buy = True
+                # KHONG reset current_cycle_fodder: van nho phoi da chon
+            else:
+                current_grade = -1
+                _resume_after_buy = False
+                current_cycle_fodder = Counter()  # chu ky moi → reset
+
+            if current_grade == -1:
+                for _ in range(15):
+                    if not self.running: break
+                    current_grade = self.detect_grade_PRECISION()
+                    if current_grade != -1: break
+                    time.sleep(0.5)
 
             if current_grade == -1:
                 clicked_continue = False
@@ -110,67 +138,102 @@ class UpgradeMixin:
                 if self.handle_bp_protection():
                     self.has_used_bp_in_cycle = True
 
-            self.total_cycles += 1
-            self.log(f"\n----- Lần {self.total_cycles} -----", tag="header")
             target_next = current_grade + 1
             self.last_target_grade = target_next
-            attempt_no = self.grade_success[target_next] + self.grade_fail[target_next] + 1
-            log_msg = f"Đập {current_grade} lên {target_next} (lần {attempt_no})"
-            if self.has_used_bp_in_cycle: log_msg += " (Bảo vệ BP)"
-            self.last_log_pos = self.log(log_msg, return_pos=True)
+            if not _resume_after_buy:
+                # Lan dap the moi hoan toan → log binh thuong
+                self.total_cycles += 1
+                self.log(f"\n----- Lần {self.total_cycles} -----", tag="header")
+                attempt_no = self.grade_success[target_next] + self.grade_fail[target_next] + 1
+                log_msg = f"Đập {current_grade} lên {target_next} (lần {attempt_no})"
+                if self.has_used_bp_in_cycle: log_msg += " (Bảo vệ BP)"
+                self.last_log_pos = self.log(log_msg, return_pos=True)
+            # Neu _resume_after_buy: giu nguyen total_cycles va last_log_pos cu
+            # (ket qua dap the se update vao dong log cu cua "Lan X")
 
             needed_ovrs = self.fodder_map.get(current_grade, [])
             if not needed_ovrs: break
 
-            x1, y1, _, _ = self.rect
-            
             pyautogui.click(x1 + 834, y1 + 423, button='right')
             time.sleep(0.5)
 
             fodder_region = (x1 + 602, y1 + 281, x1 + 1122, y1 + 641)
 
             target_counts = Counter(needed_ovrs)
-            shot = ImageGrab.grab(bbox=fodder_region)
-            img_res = cv2.resize(cv2.cvtColor(np.array(shot), cv2.COLOR_RGB2BGR), None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-            gray = cv2.cvtColor(img_res, cv2.COLOR_BGR2GRAY)
-            _, t_bin = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            self._scan_fodder_with_threshold(t_bin, fodder_region, target_counts, current_cycle_fodder)
+
+            # Tru so phoi da chon truoc do trong chu ky nay (current_cycle_fodder)
+            # Tranh scan lai vi phoi co the nam o vi tri scroll khac nhau
+            for ovr_str, cnt in current_cycle_fodder.items():
+                if ovr_str in target_counts:
+                    target_counts[ovr_str] = max(0, target_counts[ovr_str] - cnt)
+
+            if any(target_counts.values()):
+                shot = ImageGrab.grab(bbox=fodder_region)
+                img_res = cv2.resize(cv2.cvtColor(np.array(shot), cv2.COLOR_RGB2BGR), None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+                gray = cv2.cvtColor(img_res, cv2.COLOR_BGR2GRAY)
+                _proc_cy = set()
+                for _th in [165, 155, 175]:
+                    _, t_bin = cv2.threshold(gray, _th, 255, cv2.THRESH_BINARY_INV)
+                    self._scan_fodder_with_threshold(t_bin, fodder_region, target_counts, current_cycle_fodder,
+                                                     processed_cy=_proc_cy)
+                    if not any(target_counts.values()): break
 
             if self.running and any(target_counts.values()):
-                last_hash_up = None
-                for _ in range(15): 
-                    if not self.running: break
-                    
-                    img_check_up = ImageGrab.grab(bbox=fodder_region)
-                    curr_hash_up = cv2.resize(cv2.cvtColor(np.array(img_check_up), cv2.COLOR_RGB2GRAY), (60, 60))
-                    
-                    if last_hash_up is not None and np.mean(cv2.absdiff(last_hash_up, curr_hash_up)) < 1.0: 
-                        break 
-                        
-                    last_hash_up = curr_hash_up
-                    
-                    for _ in range(9): pyautogui.scroll(100) 
-                    time.sleep(0.3)
-                
-                time.sleep(0.3)
 
+                # clicked_rows: set row_key da click trong toan bo lan scroll nay
+                # Reset khi bat dau vung tim phoi moi (sau moi right-click)
+                clicked_rows = set()
+
+                def _scan_screen(region):
+                    """
+                    Scan 3 threshold tren cung 1 anh.
+                    clicked_rows chia se giua tat ca lan goi _scan_screen de
+                    tranh click lai phoi da chon (uncheck).
+                    """
+                    shot  = ImageGrab.grab(bbox=region)
+                    img   = cv2.resize(cv2.cvtColor(np.array(shot), cv2.COLOR_RGB2BGR),
+                                       None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+                    gray  = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    # processed_cy cho 3 threshold trong cung 1 anh
+                    processed_cy = set(clicked_rows)  # bao gom ca row da click truoc do
+                    for th in [165, 155, 175]:
+                        _, t = cv2.threshold(gray, th, 255, cv2.THRESH_BINARY_INV)
+                        self._scan_fodder_with_threshold(t, region, target_counts, current_cycle_fodder,
+                                                         processed_cy=processed_cy)
+                        if not any(target_counts.values()): break
+                    # Luu cac row vua duoc xu ly vao clicked_rows
+                    clicked_rows.update(processed_cy)
+
+                # Buoc 1: Scan man hinh hien tai
+                _scan_screen(fodder_region)
+
+                # Buoc 2: Scroll len dinh
+                if self.running and any(target_counts.values()):
+                    last_hash_up = None
+                    for _ in range(20):
+                        if not self.running: break
+                        img_check    = ImageGrab.grab(bbox=fodder_region)
+                        curr_hash_up = cv2.resize(cv2.cvtColor(np.array(img_check), cv2.COLOR_RGB2GRAY), (60, 60))
+                        if last_hash_up is not None and np.mean(cv2.absdiff(last_hash_up, curr_hash_up)) < 1.0:
+                            break
+                        last_hash_up = curr_hash_up
+                        for _ in range(9): pyautogui.scroll(100)
+                        time.sleep(0.15)
+                    time.sleep(0.3)
+
+                # Buoc 3: Scroll xuong tung man hinh va scan
                 last_hash = None
                 for scroll_attempt in range(30):
                     if not self.running or not any(target_counts.values()): break
 
-                    s_loop = ImageGrab.grab(bbox=fodder_region)
-                    i_loop = cv2.resize(cv2.cvtColor(np.array(s_loop), cv2.COLOR_RGB2BGR), None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-                    g_loop = cv2.cvtColor(i_loop, cv2.COLOR_BGR2GRAY)
-                    _, t_loop = cv2.threshold(g_loop, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-                    self._scan_fodder_with_threshold(t_loop, fodder_region, target_counts, current_cycle_fodder)
-
+                    _scan_screen(fodder_region)
                     if not any(target_counts.values()): break
 
                     img_check = ImageGrab.grab(bbox=fodder_region)
                     curr_hash = cv2.resize(cv2.cvtColor(np.array(img_check), cv2.COLOR_RGB2GRAY), (60, 60))
                     if last_hash is not None and np.mean(cv2.absdiff(last_hash, curr_hash)) < 1.0: break
                     last_hash = curr_hash
-                    
+
                     for _ in range(9): pyautogui.scroll(-100)
                     time.sleep(0.8)
 
@@ -180,13 +243,15 @@ class UpgradeMixin:
                 missing_ovr = list(target_counts.keys())[0]
                 if self.auto_buy_config and missing_ovr in self.auto_buy_config:
                     self.log(f"🔄 Hết phôi {missing_ovr}. Kích hoạt Auto Mua...", "orange")
+                    saved_grade = current_grade  # luu lai grade truoc khi di mua
                     success = self._run_single_buy_for_upgrade(missing_ovr, self.auto_buy_config[missing_ovr])
                     if not self.running: break
 
                     if success:
-                        self.log(f"✅ Đã mua xong phôi {missing_ovr}, quay lại đập thẻ...", "green")
+                        self.log(f"✅ Đã mua xong phôi {missing_ovr}, quay lại chọn phôi...", "green")
                         pyautogui.click(x1 + 690, y1 + 143)
                         time.sleep(1.5)
+                        skip_grade_detect = True  # bo qua detect grade lan tiep
                         continue
                     else:
                         self.log("❌ Auto Mua thất bại, dừng đập thẻ.", "fail")
@@ -232,6 +297,14 @@ class UpgradeMixin:
                 self.upgrade_triggered = True
                 self.fodder_consumed.update(current_cycle_fodder)
 
+                # Check popup "Gia tri hien thi cau thu thay doi" (neu hien thi)
+                # Di chuot vao 765,455, neu mau 09D95E → click → quay lai tim phoi
+                pyautogui.moveTo(x1 + 765, y1 + 455)
+                time.sleep(0.15)
+                if self.is_color_match("09D95E", x1 + 765, y1 + 455):
+                    pyautogui.click(x1 + 765, y1 + 455)
+                    continue  # quay lai dau vong lap (tim phoi lai)
+
                 skip_reg = (x1 + 1037, y1 + 666, x1 + 1123, y1 + 740)
                 max_skips = 2 if self.has_used_bp_in_cycle else 1
                 for s_count in range(max_skips):
@@ -255,10 +328,21 @@ class UpgradeMixin:
                      pyautogui.moveTo(x1 + 1109, y1 + 720)
                      time.sleep(0.1)
                      if self.is_color_match("00E559", x1 + 1109, y1 + 720) or self.is_color_match("09D95E", x1 + 1109, y1 + 720):
-                         time.sleep(0.1) 
+                         time.sleep(0.1)
                          pyautogui.click(x1 + 1109, y1 + 720)
                          clicked_continue = True
                          break
+
+                # Neu co BP: bam Tiep lan 2 voi cung co che doi color
+                if clicked_continue and self.has_used_bp_in_cycle and self.running:
+                    start_wait_bp = time.time()
+                    while time.time() - start_wait_bp < 12.0 and self.running:
+                        pyautogui.moveTo(x1 + 1109, y1 + 720)
+                        time.sleep(0.1)
+                        if self.is_color_match("00E559", x1 + 1109, y1 + 720) or self.is_color_match("09D95E", x1 + 1109, y1 + 720):
+                            time.sleep(0.1)
+                            pyautogui.click(x1 + 1109, y1 + 720)
+                            break
                 
                 if clicked_continue and self.running:
                     btn_found = False

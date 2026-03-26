@@ -8,6 +8,8 @@ class BuyFodderMixin:
 
     def run_buy_fodder(self, buy_data):
         self.running = True
+        self._start_popup_watcher()
+        self._start_popup_watcher()
         if not self.arrange_game():
             self.log("❌ Ko thấy game!")
             self.running = False
@@ -46,16 +48,23 @@ class BuyFodderMixin:
             while remaining_qty > 0 and self.running:
                 current_buy_qty = min(remaining_qty, 10)
 
-                self._fill_input(x1 + 946, y1 + 448, target_price)
-                time.sleep(0.5)
-                self._fill_input(x1 + 1050, y1 + 508, current_buy_qty)
+                self._fill_price_and_qty_verified(
+                    x1 + 946, y1 + 448, target_price,
+                    x1 + 1050, y1 + 508, current_buy_qty,
+                    price_input=item["price"]
+                )
                 time.sleep(0.5)
 
                 actual_bought, success, should_stop = self._do_buy_loop(
                     target_ovr, target_price, current_buy_qty, log_fail_once=True
                 )
-                if should_stop or not self.running:
+                if not self.running:
                     break
+                if should_stop:
+                    # Timeout → dong popup roi retry
+                    self.check_and_close_popup()
+                    time.sleep(1.0)
+                    continue
 
                 remaining_qty -= actual_bought
                 if remaining_qty > 0 and self.running:
@@ -68,5 +77,8 @@ class BuyFodderMixin:
                 else:
                     self.log(f"⚠️ Dừng mua. Thực tế mua được: {bought}/{original_qty} phôi.", "orange")
 
+        # Popup chi khi mua xong het tat ca
+        if self.running:
+            self.trigger_success_alarm(0, custom_msg="Mua phôi hoàn tất!")
         self.running = False
         self.on_finished()

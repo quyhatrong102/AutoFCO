@@ -11,10 +11,11 @@ from ui_helpers import add_hover_effect
 from ui_upgrade import UpgradeUI
 from ui_buy import BuyFodderUI
 from ui_insert import InsertUI
+from ui_insert_mua import InsertMuaUI
 from config import SAMPLE_DIR
 
 
-class App(UpgradeUI, BuyFodderUI, InsertUI):
+class App(UpgradeUI, BuyFodderUI, InsertUI, InsertMuaUI):
     def __init__(self, root):
         self.root = root
         self.sw = root.winfo_screenwidth()
@@ -41,11 +42,13 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
         self.menu_frame = tk.Frame(self.root, bg="#0d1117")
         self.upgrade_frame = tk.Frame(self.root, bg="#0d1117")
         self.insert_frame = tk.Frame(self.root, bg="#0d1117")
+        self.insert_mua_frame = tk.Frame(self.root, bg="#0d1117")
         self.buy_fodder_frame = tk.Frame(self.root, bg="#0d1117")
 
         self.btn_back_upgrade = None
         self.btn_back_buy = None
         self.btn_back_insert = None
+        self.btn_back_insert_mua = None
         self.ctrl_f = None
 
         self.bot = None
@@ -53,6 +56,7 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
         self.build_menu_ui()
         self.build_upgrade_ui()
         self.build_insert_ui()
+        self.build_insert_mua_ui()
         self.build_buy_fodder_ui()
 
         self.show_menu()
@@ -86,12 +90,20 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
         add_hover_effect(btn_buy_fodder, "#f85149", "#da3633")
 
         btn_insert = tk.Button(
-            self.menu_frame, text="Auto Chèn",
+            self.menu_frame, text="Chèn DS Yêu Thích",
             bg="#1f6feb", fg="white", font=("Consolas", 11, "bold"),
             width=18, bd=0, command=self.show_insert
         )
         btn_insert.pack(pady=6)
         add_hover_effect(btn_insert, "#388bfd", "#1f6feb")
+
+        btn_insert_mua = tk.Button(
+            self.menu_frame, text="Chèn DS Mua",
+            bg="#1f6feb", fg="white", font=("Consolas", 11, "bold"),
+            width=18, bd=0, command=self.show_insert_mua
+        )
+        btn_insert_mua.pack(pady=6)
+        add_hover_effect(btn_insert_mua, "#388bfd", "#1f6feb")
 
     # ===================== NAVIGATION =====================
 
@@ -100,6 +112,7 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
             return
         self.upgrade_frame.pack_forget()
         self.insert_frame.pack_forget()
+        self.insert_mua_frame.pack_forget()
         self.buy_fodder_frame.pack_forget()
         self.root.geometry(f"220x330+{self.sw - 220}+0")
         self.menu_frame.pack(fill="both", expand=True)
@@ -109,6 +122,7 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
             return
         self.menu_frame.pack_forget()
         self.insert_frame.pack_forget()
+        self.insert_mua_frame.pack_forget()
         self.buy_fodder_frame.pack_forget()
         h = 800 if self.auto_buy_fodder_var.get() else 600
         self.root.geometry(f"320x{h}+{self.sw - 320}+0")
@@ -120,8 +134,19 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
         self.menu_frame.pack_forget()
         self.upgrade_frame.pack_forget()
         self.buy_fodder_frame.pack_forget()
+        self.insert_mua_frame.pack_forget()
         self.insert_frame.pack(fill="both", expand=True)
         self._update_insert_window_height()
+
+    def show_insert_mua(self):
+        if self.is_running:
+            return
+        self.menu_frame.pack_forget()
+        self.upgrade_frame.pack_forget()
+        self.buy_fodder_frame.pack_forget()
+        self.insert_frame.pack_forget()
+        self.insert_mua_frame.pack(fill="both", expand=True)
+        self._update_insert_mua_window_height()
 
     def show_buy_fodder(self):
         if self.is_running:
@@ -129,6 +154,7 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
         self.menu_frame.pack_forget()
         self.upgrade_frame.pack_forget()
         self.insert_frame.pack_forget()
+        self.insert_mua_frame.pack_forget()
         self.buy_fodder_frame.pack(fill="both", expand=True)
         self._update_buy_window_height()
 
@@ -146,6 +172,8 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
             self.btn_back_buy.config(state="disabled", fg="#484f58")
         if self.btn_back_insert:
             self.btn_back_insert.config(state="disabled", fg="#484f58")
+        if self.btn_back_insert_mua:
+            self.btn_back_insert_mua.config(state="disabled", fg="#484f58")
 
     def unlock_ui(self):
         if self.btn_back_upgrade:
@@ -156,6 +184,8 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
             self.btn_back_buy.config(state="normal", fg="#c9d1d9")
         if self.btn_back_insert:
             self.btn_back_insert.config(state="normal", fg="#c9d1d9")
+        if self.btn_back_insert_mua:
+            self.btn_back_insert_mua.config(state="normal", fg="#c9d1d9")
 
     def validate_input(self, P):
         return P == "" or (P.isdigit() and len(P) <= 3)
@@ -183,6 +213,8 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
             self.log_buy("\n🛑 ĐANG DỪNG...", "orange")
         elif self.insert_frame.winfo_ismapped():
             self.log_insert("\n🛑 ĐANG DỪNG...", "orange")
+        elif self.insert_mua_frame.winfo_ismapped():
+            self.log_insert_mua("\n🛑 ĐANG DỪNG...", "orange")
         else:
             self.log_upgrade("\n🛑 ĐANG DỪNG...", "orange")
         self._reset_ui()
@@ -220,6 +252,9 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
             elif self.insert_frame.winfo_ismapped():
                 self.btn_start_insert.config(state="normal", bg="#238636")
                 self.lbl_esc_hint_insert.pack_forget()
+            elif self.insert_mua_frame.winfo_ismapped():
+                self.btn_start_insert_mua.config(state="normal", bg="#238636")
+                self.lbl_esc_hint_insert_mua.pack_forget()
         except Exception:
             pass
         try:
@@ -279,6 +314,7 @@ class App(UpgradeUI, BuyFodderUI, InsertUI):
         w, h = 400, 200
         sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
         self.alarm_window.geometry(f"{w}x{h}+{(sw - w) // 2}+{(sh - h) // 2}")
+        self.alarm_window.resizable(False, False)
 
         display_text = custom_msg if custom_msg else (
             f"Thành công +{ovr}" if is_success else f"Hết phôi {ovr} !!!"
